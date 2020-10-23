@@ -199,7 +199,7 @@ int main(){
     p_bound(x, y, Np, L);
   }
 
-  for(t=dt;dt<time_stable;t +=dt) {
+  for(t=dt;t<time_stable;t +=dt) {
     count++;
     calc_force_hs(x, y, L, Np, a, kx, ky, &avU);
     eq_motion(x, y, vx, vy, dt, kx, ky, Np, &avK, Th);
