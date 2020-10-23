@@ -207,7 +207,7 @@ int main(){
     p_bound(x, y, Np, L);
     if(count==100){
       output(x,y,a,Np,t,dt);
-      file <<t<<" "<< avU<<" "<< avK <<endl;
+      //これはいらんのでは、ファイル出力してないし、file <<t<<" "<< avU<<" "<< avK <<endl;
       count=0;
     }
   }
