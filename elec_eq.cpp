@@ -12,12 +12,13 @@ double unif_rand(double left, double right)
   return left + (right - left) * rand() / RAND_MAX;
 }
 
-int ini_coord_rand(double* x, double* y,double* a, int Np, double L, double r1, double r2){
+int ini_coord_rand(double* x, double* y,double* z,double* a, int Np, double L, double r1, double r2){
   int k, p;
   p = 0;
   for (k = 0; k < Np; k++) {
     x[k] = unif_rand(0, 1) * L;
     y[k] = unif_rand(0, 1) * L;
+    z[k] = unif_rand(0, 1) * L;
     //箱の中にランダムに配置
     if (p == 0) {
       a[k] = r1;
@@ -33,17 +34,18 @@ int ini_coord_rand(double* x, double* y,double* a, int Np, double L, double r1, 
 }
 
 
-int ini(double* vx, double* vy,int Np) {
+int ini(double* vx, double* vy,double* vz,int Np) {
   int j;
   for (j = 0; j < Np; j++) {
     vx[j] = 0.0;
     vy[j] = 0.0;
+    vz[j] = 0.0;
   }
   return 0;
 }
 
 //周期境界条件、tが更新されるたびに箱から出てないか確認
-int p_bound(double* x, double* y,int Np, double L) {
+int p_bound(double* x, double* y,double* z, int Np, double L) {
   int k;
   for (k = 0; k < Np; k++) {
     if (x[k] < 0.0) {
@@ -58,27 +60,35 @@ int p_bound(double* x, double* y,int Np, double L) {
     if (y[k] >  L) {
       y[k] = y[k] - L;
     }
+    if (z[k] < 0.0) {
+      z[k] = z[k] + L;
+    }
+    if (z[k] >  L) {
+      z[k] = z[k] - L;
+    }
 
   }
   return 0;
 }
 
-int calc_force_hs(double* x, double* y,double L, int Np, double* a, double* kx, double* ky,double* avU) {
+int calc_force_hs(double* x, double* y,double*z, double L, int Np, double* a, double* kx, double* ky,double* kz, double* avU) {
   int i, j, k;
   *avU = 0.0;
   double r;
   double t, drU;
-  double dx, dy;
+  double dx, dy, dz;
   double aij;
   double cut;
   for (k = 0; k < Np; k++) {
     kx[k] = 0.0;
     ky[k] = 0.0;
+    kz[k] = 0.0;
   }
   for (i = 0; i < Np; i++){
      for (j = i + 1; j < Np; j++){
        dx = x[i] - x[j];
        dy = y[i] - y[j];
+       dz = z[i] - z[j];
       if (dx > (0.5 * L))
          dx -= L;
       if (dx < -(0.5 * L))
@@ -87,8 +97,13 @@ int calc_force_hs(double* x, double* y,double L, int Np, double* a, double* kx, 
         dy -= L;
       if (dy < -(0.5 * L))
         dy += L ;
+      if (dz > (0.5 * L))
+        dz -= L;
+      if (dz < -(0.5 * L))
+        dz += L ;
+
         aij = (a[i] + a[j]) / 2.0;
-        r = sqrt(dx * dx + dy * dy);
+        r = sqrt(dx * dx + dy * dy + dz *dz);
         t = r / aij;
         cut = aij;
         if (r < cut) {
@@ -102,6 +117,8 @@ int calc_force_hs(double* x, double* y,double L, int Np, double* a, double* kx, 
         kx[j] += drU * dx / r; //action//
         ky[i] -= drU * dy / r;
         ky[j] += drU * dy / r;
+	kz[j] -= drU * dz / r;
+        kz[j] += drU * dy / r;
         *avU += (1 - t) * (1 - t);
       }
   }
@@ -131,22 +148,24 @@ double gaussian_rand(void)
   }
 }
 
-int eq_motion(double* x, double* y,double* vx, double* vy, double dt, double* kx, double* ky,int Np, double* avK, double Th) {
+int eq_motion(double* x, double* y,double* z,double* vx, double* vy,double* vz, double dt, double* kx, double* ky,double* kz,int Np, double* avK, double Th) {
   double zeta;
   zeta = 1.;
   int k;
   for (k = 0; k < Np; k++) {
     vx[k] += -vx[k] * zeta * dt + kx[k] * dt + sqrt(2. * zeta * Th * dt) * gaussian_rand();
     vy[k] += -vy[k] * zeta * dt + ky[k] * dt + sqrt(2. * zeta * Th * dt) * gaussian_rand();
+    vz[k] += -vz[k] * zeta * dt + kz[k] * dt + sqrt(2. * zeta * Th * dt) * gaussian_rand();
     x[k] += vx[k] * dt;
     y[k] += vy[k] * dt;
-    *avK += vx[k] * vx[k] + vy[k] * vy[k] ;
+    z[k] += vz[k] * dt;
+    *avK += vx[k] * vx[k] + vy[k] * vy[k] + vz[k] * vz[k] ;
   }
   *avK = *avK / Np / 2.0;
   return 0;
 }
 
-int output(double *x,double *y,double *r1,int Np,double t,double dt){
+int output(double *x,double *y,double *z,double *r1,int Np,double t,double dt){
   int i;
   char filename[128];//これはファイル名のための文字列//
   sprintf(filename,"bina2d_%.0f.dat",(t/dt));//ファイル名の決定//
@@ -155,7 +174,7 @@ int output(double *x,double *y,double *r1,int Np,double t,double dt){
   file.open(filename);//ファイルを書き込み用にオープン//
 
    for(i=0;i<Np;i++)
-    file << x[i] << " " << y[i]<< " "<< r1[i] << endl;
+     file << x[i] << " " << y[i]<< " "<<z[i]<<" "<< r1[i] << endl;
   file.close();
   return 0;
 }
@@ -168,21 +187,24 @@ int main(){
   double dt = 0.01;//刻み幅
   int Np = 300;
   double L;//箱
-  double* x, * y, * vx, * vy,* a, * kx, * ky;//
+  double* x, * y,* z, * vx, * vy,*vz,* a, * kx, * ky,*kz;//
   double r1=1.0, r2=1.4;//粒子の半径
 
   x = new double[Np];
   y = new double[Np];
+  z = new double[Np];
   vx = new double[Np];
   vy = new double[Np];
+  vz = new double[Np];
   a = new double[Np];
   kx = new double[Np];
   ky = new double[Np];
+  kz = new double[Np];
 
   char filename[128];
   L = sqrt(double(Np) / 0.8);
-  ini_coord_rand(x, y, a, Np, L, r1, r2);
-  ini(vx, vy, Np);
+  ini_coord_rand(x, y, z, a, Np, L, r1, r2);
+  ini(vx, vy, vz, Np);
 
   ofstream file;
 
@@ -194,19 +216,19 @@ int main(){
   for (t = 0.; t < time_stable; t += dt) {
 
   //緩和時間までdt刻みでUやKの時間平均をとったりしてる
-    calc_force_hs(x, y, L, Np, a, kx, ky, &avU);
-    eq_motion(x, y, vx, vy, dt, kx, ky, Np, &avK, Th);
-    p_bound(x, y, Np, L);
+    calc_force_hs(x, y, z, L, Np, a, kx, ky, kz, &avU);
+    eq_motion(x, y, z, vx, vy, vz, dt, kx, ky,kz, Np, &avK, Th);
+    p_bound(x, y, z, Np, L);
   }
 
   for(t=dt;t<time_stable;t +=dt) {
     count++;
-    calc_force_hs(x, y, L, Np, a, kx, ky, &avU);
-    eq_motion(x, y, vx, vy, dt, kx, ky, Np, &avK, Th);
+    calc_force_hs(x, y, z, L, Np, a, kx, ky, kz, &avU);
+    eq_motion(x, y, z, vx, vy, vz, dt, kx, ky, kz, Np, &avK, Th);
     //avUとavKをadressにする意味について後で考える
-    p_bound(x, y, Np, L);
+    p_bound(x, y, z, Np, L);
     if(count==100){
-      output(x,y,a,Np,t,dt);
+      output(x,y,z,a,Np,t,dt);
       //これはいらんのでは、ファイル出力してないし、file <<t<<" "<< avU<<" "<< avK <<endl;
       count=0;
     }
@@ -214,10 +236,13 @@ int main(){
 
 delete[] x;
 delete[] y;
+delete[] z;
 delete[] vx;
 delete[] vy;
+delete[] vz; 
 delete[] a;
 delete[] kx;
 delete[] ky;
+delete[] kz;
 return 0;
 }
