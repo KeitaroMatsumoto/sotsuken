@@ -6,6 +6,23 @@
 # include <time.h>
 using namespace std;
 # define Npm 300
+# define Pm 500
+
+int a_r1_ex(double* a, int Np, double L, double* r1){
+  int k, p;
+  p = 0;
+  for(k=0;k<Np;k++)
+  if (p == 0) {
+    a[k] = r1[k];//ここで入レル
+    p = p + 1;
+  }
+  else {
+    a[k] = r1[k];
+    p = p - 1;
+  }
+  return 0;
+}
+
 
 //velocityの初期化
 int ini(double* vx, double* vy, double* vz,int Np) {
@@ -60,7 +77,7 @@ int p_bound(double* x, double* y,double* z, int Np, double L) {
 }
 
 //重心補正
-int com_correction(double *x,double *y,double *z, double *x_corr,double *y_corr,doule *z_corr,int Np,double L){
+int com_correction(double *x,double *y,double *z, double *x_corr,double *y_corr,double *z_corr,int Np,double L){
  int i;
  double dx,dy,dz;
  static double x0[Npm],y0[Npm],z0[Npm];
@@ -101,20 +118,21 @@ int com_correction(double *x,double *y,double *z, double *x_corr,double *y_corr,
 }
 
 //ベルリストのアップデート,三次元の領域分割のイメージも後で。
-void update(double L,int Np,double *x,double *y,double *z,int M,double RCHK,int (*list)[Pm])
-{
+void update(double L,int Np,double* x,double* y,double* z,int M,double RCHK,int (*list)[Pm]){
   int i,j,k;
   int nx,ny,nz;
   int l,m,n;
   double dx,dy,dz,r;
 
-  int (*map)[Npm]=new int[M*M*M][Npm];//これは理解後で
+  int (*map)[Npm]=new int[M*M*M][Npm];
 
-  for(k=0;k<M;k++)
-    for(j=0;j<M;j++)
-    　for(i=0;i<M;i++)
+  for(k=0;k<M;k++){
+    for(j=0;j<M;j++){
+      for(i=0;i<M;i++){
      	map[i+M*j+M*M*k][0]=0;
-
+    }
+  }
+}
   for(i=0;i<Np;i++){
     nx=f((int)(x[i]*M/L),M);
     ny=f((int)(y[i]*M/L),M);
@@ -128,6 +146,7 @@ void update(double L,int Np,double *x,double *y,double *z,int M,double RCHK,int 
       }
     }
   }
+}
 }
 
 //Fouce_calclation
@@ -192,7 +211,7 @@ int calc_force(double* x, double* y, double*z, double L, int Np, double* a, doub
 
 //荷電粒子の運動方程式
 int md_motion(double* x, double* y, double* z, double* vx, double* vy, double* vz, double dt, double* kx, double* ky,
-  double* kz, int Np, double* avK, double L,double* a,double* avU,double* avK,int(*list)[Pm]) {
+  double* kz, int Np, double* a,double L,double* avU,double* avK,int(*list)[Pm]) {
 
   int k;
   for (k = 0; k < Np; k++) {
@@ -206,9 +225,9 @@ int md_motion(double* x, double* y, double* z, double* vx, double* vy, double* v
     vy[k] += 0.5*ky[k] * dt;
     vz[k] += 0.5*kz[k] * dt;
 
-    x[k] += vx[k] *dt + 0.5*kx[i]*dt*dt;
-    y[k] += vy[k] *dt + 0.5*ky[i]*dt*dt;
-    z[k] += vz[k] *dt + 0.5*kz[i]*dt*dt;
+    x[k] += vx[k] *dt + 0.5*kx[k]*dt*dt;
+    y[k] += vy[k] *dt + 0.5*ky[k]*dt*dt;
+    z[k] += vz[k] *dt + 0.5*kz[k]*dt*dt;
   }
   *avK = *avK /Np /2.0;
   return 0;
@@ -234,8 +253,8 @@ int output(double *x,double *y,double *z,double *r1,int Np,double t,double dt){
 
 int main(){
   double t, avU=0.0, avK=0.0;
-  double x_corr=0.0,y_corr=0.0;
-  int i,count=0;
+  double x_corr=0.0,y_corr=0.0,z_corr=0.0;
+  int count=0;
   int i,j,k;
   int Np = 300;
   double time_coord=10000;
@@ -243,6 +262,8 @@ int main(){
   double RCHK=4.5;
   double L = sqrt(double(Np) / 0.8);
   int    M=(int)(L/RCHK);
+
+  double* x, * y, * z, * vx, * vy, * vz, * kx, * ky, * kz, * a,* r1;
 
   x = new double[Np];
   y = new double[Np];
@@ -256,7 +277,7 @@ int main(){
   a = new double[Np];
   r1 = new double[Np];
 
-  double* x, * y, * z, * vx, * vy, * vz, * kx, * ky, * kz, * a,* r1;
+
   int (*list)[Pm]=new int[Npm][Pm];
   char filename[64];
   ifstream file;//ファイルの読み取り
@@ -270,16 +291,20 @@ int main(){
   file.close();
 
   ini(vx, vy, vz, Np);
+  a_r1_ex(a,  Np,  L,  r1);
+
+  update(L,Np,x,y,z,M,RCHK,list);//make list
 
   for(t=dt;t<time_max;t+=dt){
     count++;
-    calc_force(x, y, z, L, Np, a, kx, ky, kz, &avU,list);
-    md_motion(double* x, double* y, double* z, double* vx, double* vy, double* vz, double dt, double* kx, double* ky,
-      double* kz, int Np, double* avK, double L,double* a,double* avU,double* avK,int(*list)[Pm]);
+    md_motion(x, y,  z,  vx,  vy,  vz,  dt,  kx, ky,
+       kz,  Np,  a,  L,  &avU, &avK,list);
+       //int md_motion(double* x, double* y, double* z, double* vx, double* vy, double* vz, double dt, double* kx, double* ky,
+        // double* kz, int Np, double* a,double L,double* avU,double* avK,int(*list)[Pm])
     com_correction(x,y,z,&x_corr,&y_corr,&z_corr,Np, L);
     p_bound(x, y, z,  Np, L);
 
-    update(L,Np,x,y,M,RCHK,list);//make list
+
 
     sprintf(filename,"energy_time.txt");
     ofstream file;
