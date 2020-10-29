@@ -295,6 +295,10 @@ int main(){
 
   update(L,Np,x,y,z,M,RCHK,list);//make list
 
+  sprintf(filename,"energy_time.txt");
+    ofstream file2;
+    file2.open(filename);//ファイルの書き込み
+
   for(t=dt;t<time_max;t+=dt){
     count++;
     md_motion(x, y,  z,  vx,  vy,  vz,  dt,  kx, ky,
@@ -304,21 +308,15 @@ int main(){
     com_correction(x,y,z,&x_corr,&y_corr,&z_corr,Np, L);
     p_bound(x, y, z,  Np, L);
 
-
-
-    sprintf(filename,"energy_time.txt");
-    ofstream file;
-    file.open(filename);//ファイルの書き込み
-
     if(count==int(time_coord/dt)){
       output(x,y,z,a,Np,t,dt);
-      file <<t<<" "<< avU<<" "<< avK <<endl;
+      file2 <<t<<" "<< avU<<" "<< avK <<endl;
       count=0;
     }
   }
 
 
-
+file2.close();
 
 
   delete[] x;
