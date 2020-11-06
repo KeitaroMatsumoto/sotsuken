@@ -463,7 +463,7 @@ int main()
   double time_stable = 100. ,time_eq =1000.;
   double Th = 0.90;
   double RCHK=4.5;
-  double L = sqrt(double(Np) / 0.8);
+  double L = pow (double(Np) / 0.8 ,1.0/3.0);
   int    M=(int)(L/RCHK);
   //cout << "L=" << L <<" "<< "M="<<M <<endl;
 
