@@ -24,6 +24,7 @@ int main(){
   for(i=0;i<Np;i++){
     file >> x[i] >> y[i] >> z[i] >> r1[i];
   }
+  file.close();
 
   delete[] x;
   delete[] y;
