@@ -149,6 +149,8 @@ void update(double L,int Np,double* x,double* y,double* z,int M,double RCHK,int 
 }
 }
 
+
+
 //Fouce_calclation
 int calc_force(double* x, double* y, double*z, double L, int Np, double* a, double* kx, double* ky, double* kz,double* avU,int (*list)[Pm]) {
   int i, j, k;
