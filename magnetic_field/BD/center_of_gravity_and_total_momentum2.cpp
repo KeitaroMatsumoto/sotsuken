@@ -368,13 +368,6 @@ int main(){
     p_bound(x, y, z,Np, L);
     calc_M(x,y,z,vx,vy,vz,&Lx,&Ly,&Lz,L,Np);
 
-    //remove_boxsize_bound(double* x,double* y,double* z,double* x_l,double* y_l,double* z_l,int Np,double L){
-    ///int calc_del_M(double* x_l,double* y_l,double* z_l,double* vx,double* vy,double* vz,double* del_Mx,double* del_My,double* del_Mz,int Np
-    ///calc_Mではdel_Mxなどはやらない、除く
-    ///remove_bound___をしてから、x_lなどを用いてdel_Mなどをけいさんする関数をいれるcalc_del_M
-
-    //(double* x, double* y,double* z,double* vx, double* vy, double* vz,double* Lx,double* Ly,double* Lz,double* del_Mx,double* del_My,double* del_Mz,double L)
-    //int com_correction(double *x,double *y,double *z,double *x_corr,double *y_corr,double *z_corr,int Np,double L)
     if(count==100){
       /// output(x,y,z,a,Np,t,dt);
       file <<t<<" "<< avU<<" "<< avK <<" "<<avU+avK<<endl;
